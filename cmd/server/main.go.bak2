@@ -1,0 +1,48 @@
+package main
+
+import (
+	"log"
+	// "fmt"
+	"net/http"
+	"os"
+
+	"backend/internal/db"
+
+	"github.com/joho/godotenv"
+)
+
+func main() {
+	godotenv.Load()
+	// log.Println("Server Running on :8090")
+	database := db.NewPostgres()
+	defer database.Close()
+
+	// Read and execute migration
+	sqlBytes, err := os.ReadFile("migrations/001_create_users.sql")
+	if err != nil {
+		log.Fatalf("Failed to read migration file: %v", err)
+	}
+
+	_, err = database.Exec(string(sqlBytes))
+	// rowsAffected, _ := result.RowsAffected()
+	// log.Printf("Migration executed, rows affected: %d", rowsAffected)
+	if err != nil {
+		log.Fatalf("Failed to create users table: %v", err)
+	}
+	log.Print("Users table created successfully")
+	log.Printf("Open connection %d", database.Stats().OpenConnections)
+	log.Printf("Max Open connection %d", database.Stats().MaxOpenConnections)
+	log.Printf("In use %d", database.Stats().InUse)
+
+	// database.QueryRow("SELECT * FROM users")
+
+	// Check current database
+	var dbName string
+	err = database.QueryRow("SELECT current_database()").Scan(&dbName)
+	if err != nil {
+		log.Fatalf("Failed to get database name: %v", err)
+	}
+	log.Printf("Connected to database: %s", dbName)
+
+	log.Fatal(http.ListenAndServe(":8090", nil))
+}

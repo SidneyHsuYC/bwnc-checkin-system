@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="icon" type="image/png" href="/favicon.ico?v=1">
+  <title>User Form</title>
+</head>
+<body>
+  <h2>User Form</h2>
+
+  <form id="userForm">
+    <input name="first_name" placeholder="First Name" required /><br />
+    <input name="last_name" placeholder="Last Name" required /><br />
+    <input name="phone" placeholder="Phone" required /><br />
+    <input name="email" placeholder="Email" required /><br />
+    <button type="submit">Submit</button>
+  </form>
+
+  <script>
+    document.getElementById("userForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const form = e.target;
+
+      const data = {
+        first_name: form.first_name.value,
+        last_name: form.last_name.value,
+        phone: form.phone.value,
+        email: form.email.value,
+      };
+
+      const res = await fetch("http://localhost:8090/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await res.json();
+      console.log(result);
+      alert("User created with ID " + result.id);
+    });
+  </script>
+</body>
+</html>
