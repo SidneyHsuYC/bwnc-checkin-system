@@ -1,45 +1,35 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="/favicon.ico?v=1">
-  <title>User Form</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <title>Student Check-in System</title>
 </head>
 <body>
-  <h2>User Form</h2>
+  <div class="container">
+    <header>
+      <h1>Student Check-in System</h1>
+      <p class="subtitle">Welcome to the BWNC Check-in Kiosk</p>
+    </header>
 
-  <form id="userForm">
-    <input name="first_name" placeholder="First Name" required /><br />
-    <input name="last_name" placeholder="Last Name" required /><br />
-    <input name="phone" placeholder="Phone" required /><br />
-    <input name="email" placeholder="Email" required /><br />
-    <button type="submit">Submit</button>
-  </form>
+    <main class="home-grid">
+      <a href="/pages/checkin.html" class="card card-primary">
+        <h2>Check In</h2>
+        <p>Check in students to events</p>
+      </a>
 
-  <script>
-    document.getElementById("userForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
+      <a href="/pages/create-student.html" class="card">
+        <h2>Create Student Account</h2>
+        <p>Register a new student</p>
+      </a>
 
-      const form = e.target;
-
-      const data = {
-        first_name: form.first_name.value,
-        last_name: form.last_name.value,
-        phone: form.phone.value,
-        email: form.email.value,
-      };
-
-      const res = await fetch("http://localhost:8090/api/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result = await res.json();
-      console.log(result);
-      alert("User created with ID " + result.id);
-    });
-  </script>
+      <a href="/pages/create-event.html" class="card">
+        <h2>Create Event</h2>
+        <p>Add a new event to the system</p>
+      </a>
+    </main>
+  </div>
 </body>
 </html>

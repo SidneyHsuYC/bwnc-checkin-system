@@ -39,7 +39,7 @@ func requestLogger(next http.Handler) http.Handler {
 	})
 }
 
-func NewRouter(userHandler *handlers.UserHandler) http.Handler {
+func NewRouter(userHandler *handlers.UserHandler, studentHandler *handlers.StudentHandler, eventHandler *handlers.EventHandler, checkinHandler *handlers.CheckinHandler) http.Handler {
 	r := chi.NewRouter()
 
 	// Middleware
@@ -64,9 +64,23 @@ func NewRouter(userHandler *handlers.UserHandler) http.Handler {
 
 	// API routes
 	r.Route("/api", func(r chi.Router) {
+		// User routes (legacy)
 		r.Post("/user", userHandler.CreateUser)
 		r.Get("/users", userHandler.GetUsers)
 		r.Get("/user/{id}", userHandler.GetUserByID)
+
+		// Student routes
+		r.Post("/students", studentHandler.CreateStudent)
+		r.Get("/students/search", studentHandler.SearchStudents)
+
+		// Event routes
+		r.Post("/events", eventHandler.CreateEvent)
+		r.Get("/events", eventHandler.ListEvents)
+		r.Get("/events/upcoming", eventHandler.ListUpcomingEvents)
+
+		// Check-in routes
+		r.Post("/checkins", checkinHandler.CreateCheckin)
+		r.Get("/checkins", checkinHandler.ListCheckins)
 	})
 
 	// Static files

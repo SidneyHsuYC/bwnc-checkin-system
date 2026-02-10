@@ -12,6 +12,7 @@ import (
 	"github.com/SidneyHsuYC/bwnc-checkin-system/internal/db"
 	"github.com/SidneyHsuYC/bwnc-checkin-system/internal/handlers"
 	"github.com/SidneyHsuYC/bwnc-checkin-system/internal/logger"
+	"github.com/SidneyHsuYC/bwnc-checkin-system/internal/migration"
 	"github.com/SidneyHsuYC/bwnc-checkin-system/internal/router"
 )
 
@@ -39,22 +40,18 @@ func main() {
 
 	// Run migrations
 	logger.Info("Running database migrations...")
-	sqlBytes, err := os.ReadFile("migrations/001_create_users.sql")
-	if err != nil {
-		logger.Error("Failed to read migration file", "error", err)
-		os.Exit(1)
-	}
-
-	_, err = database.Exec(string(sqlBytes))
-	if err != nil {
-		logger.Error("Failed to execute migration", "error", err)
+	if err := migration.RunMigrations(database, "migrations"); err != nil {
+		logger.Error("Failed to run migrations", "error", err)
 		os.Exit(1)
 	}
 	logger.Info("Migrations completed successfully")
 
 	// Initialize handlers and router
 	userHandler := &handlers.UserHandler{DB: database}
-	r := router.NewRouter(userHandler)
+	studentHandler := handlers.NewStudentHandler(database)
+	eventHandler := handlers.NewEventHandler(database)
+	checkinHandler := handlers.NewCheckinHandler(database)
+	r := router.NewRouter(userHandler, studentHandler, eventHandler, checkinHandler)
 
 	// Start server
 	port := ":8090"

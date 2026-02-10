@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="/favicon.ico?v=1">
+  <link rel="stylesheet" href="/css/styles.css">
+  <title>Student Check-in</title>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">← Back to Home</a>
+    
+    <header>
+      <h1>Student Check-in</h1>
+      <p class="subtitle">Check in students to events</p>
+    </header>
+
+    <div class="form-container">
+      <div id="message" class="message hidden"></div>
+
+      <form id="checkinForm">
+        <div class="form-group">
+          <label for="event_id">Select Event *</label>
+          <select id="event_id" name="event_id" required>
+            <option value="">-- Select an event --</option>
+          </select>
+        </div>
+
+        <div class="form-group autocomplete-container">
+          <label for="student_name">Student Name *</label>
+          <input type="text" id="student_name" name="student_name" placeholder="Start typing student name..." autocomplete="off" required>
+          <div id="autocomplete_results" class="autocomplete-results hidden"></div>
+          <input type="hidden" id="student_id" name="student_id">
+        </div>
+
+        <div class="form-group">
+          <label for="class_info">Class Info</label>
+          <input type="text" id="class_info" name="class_info" readonly>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" readonly>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Check In</button>
+      </form>
+
+      <div id="success_actions" class="button-group hidden">
+        <button id="continue_checkin" class="btn btn-primary btn-block">Continue to Check-in</button>
+        <button id="go_home" class="btn btn-secondary btn-block">Go Back to Home Page</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/checkin.js"></script>
+</body>
+</html>

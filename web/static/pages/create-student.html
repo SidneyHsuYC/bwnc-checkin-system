@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="/favicon.ico?v=1">
+  <link rel="stylesheet" href="/css/styles.css">
+  <title>Create Student Account</title>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">← Back to Home</a>
+    
+    <header>
+      <h1>Create Student Account</h1>
+      <p class="subtitle">Register a new student in the system</p>
+    </header>
+
+    <div class="form-container">
+      <div id="message" class="message hidden"></div>
+
+      <form id="studentForm">
+        <div class="form-group">
+          <label for="first_name">First Name *</label>
+          <input type="text" id="first_name" name="first_name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="last_name">Last Name *</label>
+          <input type="text" id="last_name" name="last_name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="class_info">Class Info *</label>
+          <input type="text" id="class_info" name="class_info" placeholder="e.g., CS 101" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email *</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Create Student</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/student.js"></script>
+</body>
+</html>
