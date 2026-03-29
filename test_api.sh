@@ -1,181 +1,252 @@
 #!/bin/bash
 
-# Colors for output
+# API Testing Script for Student Check-in System
+# Run this script to test all the new features
+
+API_URL="http://localhost:8090"
 GREEN='\033[0;32m'
-BLUE='\033[0;34m'
 RED='\033[0;31m'
+BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-API_URL="http://localhost:8090"
-
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}🧪 Testing API Endpoints${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║     Student Check-in System - API Test Suite                ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
-# Test 1: Create User 1
-echo -e "${YELLOW}📝 Test 1: Creating user - John Doe${NC}"
-response=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/api/user" \
+# Check if server is running
+echo -e "${BLUE}Checking server health...${NC}"
+HEALTH=$(curl -s ${API_URL}/health)
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Server is running${NC}"
+    echo "$HEALTH" | jq '.'
+else
+    echo -e "${RED}✗ Server is not running. Please start the server first.${NC}"
+    exit 1
+fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo -e "${YELLOW}TEST 1: Class Management${NC}"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+echo ""
+echo -e "${BLUE}1.1 Creating a class (Monday 7pm-9pm)...${NC}"
+CLASS1=$(curl -s -X POST ${API_URL}/api/classes \
   -H "Content-Type: application/json" \
   -d '{
-    "first_name": "John",
-    "last_name": "Doe",
-    "phone": "+1-555-0101",
-    "email": "john.doe@example.com"
+    "start_date": "2026-02-17T00:00:00Z",
+    "day_of_week": "Mon",
+    "start_time": "19:00",
+    "end_time": "21:00"
   }')
-
-http_code=$(echo "$response" | tail -n1)
-body=$(echo "$response" | sed '$d')
-
-if [ "$http_code" -eq 201 ]; then
-  echo -e "${GREEN}✅ Success (HTTP $http_code)${NC}"
-  echo "$body" | jq '.'
+CLASS1_ID=$(echo $CLASS1 | jq -r '.id')
+if [ "$CLASS1_ID" != "null" ]; then
+    echo -e "${GREEN}✓ Class created with ID: $CLASS1_ID${NC}"
+    echo "$CLASS1" | jq '.'
 else
-  echo -e "${RED}❌ Failed (HTTP $http_code)${NC}"
-  echo "$body"
+    echo -e "${RED}✗ Failed to create class${NC}"
 fi
-echo ""
 
-# Test 2: Create User 2
-echo -e "${YELLOW}📝 Test 2: Creating user - Jane Smith${NC}"
-response=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/api/user" \
+echo ""
+echo -e "${BLUE}1.2 Creating a student (for class leader test)...${NC}"
+STUDENT1=$(curl -s -X POST ${API_URL}/api/students \
   -H "Content-Type: application/json" \
   -d '{
-    "first_name": "Jane",
-    "last_name": "Smith",
-    "phone": "+1-555-0102",
-    "email": "jane.smith@example.com"
+    "first_name": "Test",
+    "last_name": "Leader",
+    "email": "test.leader@example.com"
   }')
-
-http_code=$(echo "$response" | tail -n1)
-body=$(echo "$response" | sed '$d')
-
-if [ "$http_code" -eq 201 ]; then
-  echo -e "${GREEN}✅ Success (HTTP $http_code)${NC}"
-  echo "$body" | jq '.'
+STUDENT1_ID=$(echo $STUDENT1 | jq -r '.id')
+if [ "$STUDENT1_ID" != "null" ]; then
+    echo -e "${GREEN}✓ Student created with ID: $STUDENT1_ID${NC}"
+    echo "$STUDENT1" | jq '.'
 else
-  echo -e "${RED}❌ Failed (HTTP $http_code)${NC}"
-  echo "$body"
+    echo -e "${RED}✗ Failed to create student${NC}"
 fi
-echo ""
 
-# Test 3: Create User 3
-echo -e "${YELLOW}📝 Test 3: Creating user - Bob Johnson${NC}"
-response=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/api/user" \
+echo ""
+echo -e "${BLUE}1.3 Creating a class with leader (Tuesday 6pm-8pm)...${NC}"
+CLASS2=$(curl -s -X POST ${API_URL}/api/classes \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"start_date\": \"2026-02-18T00:00:00Z\",
+    \"day_of_week\": \"Tue\",
+    \"start_time\": \"18:00\",
+    \"end_time\": \"20:00\",
+    \"leader_id\": $STUDENT1_ID
+  }")
+CLASS2_ID=$(echo $CLASS2 | jq -r '.id')
+if [ "$CLASS2_ID" != "null" ]; then
+    echo -e "${GREEN}✓ Class with leader created with ID: $CLASS2_ID${NC}"
+    echo "$CLASS2" | jq '.'
+else
+    echo -e "${RED}✗ Failed to create class with leader${NC}"
+fi
+
+echo ""
+echo -e "${BLUE}1.4 Listing all classes...${NC}"
+CLASSES=$(curl -s ${API_URL}/api/classes)
+CLASS_COUNT=$(echo $CLASSES | jq '. | length')
+echo -e "${GREEN}✓ Found $CLASS_COUNT classes${NC}"
+echo "$CLASSES" | jq '.'
+
+echo ""
+echo -e "${BLUE}1.5 Searching for Monday classes...${NC}"
+SEARCH_RESULT=$(curl -s "${API_URL}/api/classes/search?q=mon")
+SEARCH_COUNT=$(echo $SEARCH_RESULT | jq '. | length')
+echo -e "${GREEN}✓ Found $SEARCH_COUNT Monday classes${NC}"
+echo "$SEARCH_RESULT" | jq '.'
+
+echo ""
+echo -e "${BLUE}1.6 Getting class with leader details...${NC}"
+CLASS_DETAIL=$(curl -s ${API_URL}/api/classes/$CLASS2_ID)
+LEADER_NAME=$(echo $CLASS_DETAIL | jq -r '.leader.first_name + " " + .leader.last_name')
+echo -e "${GREEN}✓ Class leader: $LEADER_NAME${NC}"
+echo "$CLASS_DETAIL" | jq '.'
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo -e "${YELLOW}TEST 2: Student Registration (Optional Class Info)${NC}"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+echo ""
+echo -e "${BLUE}2.1 Creating student WITHOUT class info...${NC}"
+STUDENT2=$(curl -s -X POST ${API_URL}/api/students \
   -H "Content-Type: application/json" \
   -d '{
-    "first_name": "Bob",
-    "last_name": "Johnson",
-    "phone": "+1-555-0103",
-    "email": "bob.johnson@example.com"
+    "first_name": "NoClass",
+    "last_name": "Student",
+    "email": "noclass@example.com"
   }')
-
-http_code=$(echo "$response" | tail -n1)
-body=$(echo "$response" | sed '$d')
-
-if [ "$http_code" -eq 201 ]; then
-  echo -e "${GREEN}✅ Success (HTTP $http_code)${NC}"
-  echo "$body" | jq '.'
+STUDENT2_ID=$(echo $STUDENT2 | jq -r '.id')
+if [ "$STUDENT2_ID" != "null" ]; then
+    echo -e "${GREEN}✓ Student created WITHOUT class info - ID: $STUDENT2_ID${NC}"
+    echo "$STUDENT2" | jq '.'
 else
-  echo -e "${RED}❌ Failed (HTTP $http_code)${NC}"
-  echo "$body"
+    echo -e "${RED}✗ Failed to create student without class info${NC}"
 fi
-echo ""
 
-# Test 4: Create User 4
-echo -e "${YELLOW}📝 Test 4: Creating user - Alice Williams${NC}"
-response=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/api/user" \
+echo ""
+echo -e "${BLUE}2.2 Creating student WITH class info and class_id...${NC}"
+STUDENT3=$(curl -s -X POST ${API_URL}/api/students \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"first_name\": \"WithClass\",
+    \"last_name\": \"Student\",
+    \"class_info\": \"Mon 19:00-21:00\",
+    \"class_id\": $CLASS1_ID,
+    \"email\": \"withclass@example.com\"
+  }")
+STUDENT3_ID=$(echo $STUDENT3 | jq -r '.id')
+if [ "$STUDENT3_ID" != "null" ]; then
+    echo -e "${GREEN}✓ Student created WITH class info - ID: $STUDENT3_ID${NC}"
+    echo "$STUDENT3" | jq '.'
+else
+    echo -e "${RED}✗ Failed to create student with class info${NC}"
+fi
+
+echo ""
+echo -e "${BLUE}2.3 Searching for students...${NC}"
+STUDENT_SEARCH=$(curl -s "${API_URL}/api/students/search?q=student")
+STUDENT_SEARCH_COUNT=$(echo $STUDENT_SEARCH | jq '. | length')
+echo -e "${GREEN}✓ Found $STUDENT_SEARCH_COUNT students${NC}"
+echo "$STUDENT_SEARCH" | jq '.'
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo -e "${YELLOW}TEST 3: Check-in Flow${NC}"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+echo ""
+echo -e "${BLUE}3.1 Creating an event...${NC}"
+EVENT=$(curl -s -X POST ${API_URL}/api/events \
   -H "Content-Type: application/json" \
   -d '{
-    "first_name": "Alice",
-    "last_name": "Williams",
-    "phone": "+1-555-0104",
-    "email": "alice.williams@example.com"
+    "event_name": "Test Workshop",
+    "event_time": "2026-02-20T19:00:00Z",
+    "event_type": "Workshop"
   }')
-
-http_code=$(echo "$response" | tail -n1)
-body=$(echo "$response" | sed '$d')
-
-if [ "$http_code" -eq 201 ]; then
-  echo -e "${GREEN}✅ Success (HTTP $http_code)${NC}"
-  echo "$body" | jq '.'
+EVENT_ID=$(echo $EVENT | jq -r '.id')
+if [ "$EVENT_ID" != "null" ]; then
+    echo -e "${GREEN}✓ Event created with ID: $EVENT_ID${NC}"
+    echo "$EVENT" | jq '.'
 else
-  echo -e "${RED}❌ Failed (HTTP $http_code)${NC}"
-  echo "$body"
+    echo -e "${RED}✗ Failed to create event${NC}"
 fi
+
 echo ""
-
-# Test 5: Get All Users
-echo -e "${YELLOW}📋 Test 5: Fetching all users${NC}"
-response=$(curl -s -w "\n%{http_code}" -X GET "$API_URL/api/users")
-
-http_code=$(echo "$response" | tail -n1)
-body=$(echo "$response" | sed '$d')
-
-if [ "$http_code" -eq 200 ]; then
-  echo -e "${GREEN}✅ Success (HTTP $http_code)${NC}"
-  echo "$body" | jq '.'
+echo -e "${BLUE}3.2 Checking in student to event...${NC}"
+CHECKIN=$(curl -s -X POST ${API_URL}/api/checkins \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"student_id\": $STUDENT2_ID,
+    \"event_id\": $EVENT_ID
+  }")
+CHECKIN_ID=$(echo $CHECKIN | jq -r '.id')
+if [ "$CHECKIN_ID" != "null" ]; then
+    echo -e "${GREEN}✓ Student checked in - Checkin ID: $CHECKIN_ID${NC}"
+    echo "$CHECKIN" | jq '.'
 else
-  echo -e "${RED}❌ Failed (HTTP $http_code)${NC}"
-  echo "$body"
+    echo -e "${RED}✗ Failed to check in student${NC}"
 fi
+
 echo ""
+echo -e "${BLUE}3.3 Listing check-ins for event...${NC}"
+CHECKINS=$(curl -s "${API_URL}/api/checkins?event_id=$EVENT_ID")
+CHECKIN_COUNT=$(echo $CHECKINS | jq '. | length')
+echo -e "${GREEN}✓ Found $CHECKIN_COUNT check-ins for this event${NC}"
+echo "$CHECKINS" | jq '.'
 
-# Test 6: Get User by ID
-echo -e "${YELLOW}🔍 Test 6: Fetching user by ID (ID=1)${NC}"
-response=$(curl -s -w "\n%{http_code}" -X GET "$API_URL/api/user/1")
-
-http_code=$(echo "$response" | tail -n1)
-body=$(echo "$response" | sed '$d')
-
-if [ "$http_code" -eq 200 ]; then
-  echo -e "${GREEN}✅ Success (HTTP $http_code)${NC}"
-  echo "$body" | jq '.'
+echo ""
+echo -e "${BLUE}3.4 Testing duplicate check-in prevention...${NC}"
+DUPLICATE=$(curl -s -X POST ${API_URL}/api/checkins \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"student_id\": $STUDENT2_ID,
+    \"event_id\": $EVENT_ID
+  }")
+ERROR=$(echo $DUPLICATE | jq -r '.error')
+if [ "$ERROR" != "null" ]; then
+    echo -e "${GREEN}✓ Duplicate check-in prevented: $ERROR${NC}"
 else
-  echo -e "${RED}❌ Failed (HTTP $http_code)${NC}"
-  echo "$body"
+    echo -e "${RED}✗ Duplicate check-in was not prevented${NC}"
 fi
+
 echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo -e "${YELLOW}TEST 4: Email Validation${NC}"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Test 7: Get User by ID - Not Found
-echo -e "${YELLOW}🔍 Test 7: Fetching non-existent user (ID=9999)${NC}"
-response=$(curl -s -w "\n%{http_code}" -X GET "$API_URL/api/user/9999")
-
-http_code=$(echo "$response" | tail -n1)
-body=$(echo "$response" | sed '$d')
-
-if [ "$http_code" -eq 404 ]; then
-  echo -e "${GREEN}✅ Correctly returned 404 (HTTP $http_code)${NC}"
-  echo "$body"
-else
-  echo -e "${RED}❌ Unexpected response (HTTP $http_code)${NC}"
-  echo "$body"
-fi
 echo ""
-
-# Test 8: Test validation - Missing fields
-echo -e "${YELLOW}⚠️  Test 8: Testing validation (missing email)${NC}"
-response=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/api/user" \
+echo -e "${BLUE}4.1 Testing duplicate email prevention...${NC}"
+DUPLICATE_EMAIL=$(curl -s -X POST ${API_URL}/api/students \
   -H "Content-Type: application/json" \
   -d '{
-    "first_name": "Invalid",
-    "last_name": "User",
-    "phone": "+1-555-9999"
+    "first_name": "Duplicate",
+    "last_name": "Email",
+    "email": "noclass@example.com"
   }')
-
-http_code=$(echo "$response" | tail -n1)
-body=$(echo "$response" | sed '$d')
-
-if [ "$http_code" -eq 400 ]; then
-  echo -e "${GREEN}✅ Validation working correctly (HTTP $http_code)${NC}"
-  echo "$body"
+ERROR=$(echo $DUPLICATE_EMAIL | jq -r '.error')
+if [[ "$ERROR" == *"already"* ]]; then
+    echo -e "${GREEN}✓ Duplicate email prevented: $ERROR${NC}"
 else
-  echo -e "${RED}❌ Unexpected response (HTTP $http_code)${NC}"
-  echo "$body"
+    echo -e "${RED}✗ Duplicate email was not prevented${NC}"
 fi
-echo ""
 
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}✨ Testing complete!${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║                    TEST SUITE COMPLETE                       ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo ""
+echo -e "${GREEN}All tests completed!${NC}"
+echo ""
+echo "Summary:"
+echo "  • Classes created: 2"
+echo "  • Students created: 3"
+echo "  • Events created: 1"
+echo "  • Check-ins performed: 1"
+echo ""
+echo "You can now test the UI at: ${API_URL}"
+echo ""

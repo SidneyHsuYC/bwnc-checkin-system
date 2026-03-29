@@ -31,13 +31,20 @@
         </div>
 
         <div class="form-group">
-          <label for="class_info">Class Info *</label>
-          <input type="text" id="class_info" name="class_info" placeholder="e.g., CS 101" required>
+          <label for="class_info">Class (Optional)</label>
+          <div class="autocomplete-container">
+            <input type="text" id="class_info" name="class_info" placeholder="Search for a class by name" autocomplete="off" readonly onfocus="this.removeAttribute('readonly');">
+            <div id="class_autocomplete_results" class="autocomplete-results hidden"></div>
+          </div>
+          <input type="hidden" id="class_id" name="class_id">
         </div>
 
         <div class="form-group">
           <label for="email">Email *</label>
-          <input type="email" id="email" name="email" required>
+          <div class="email-input-container">
+            <input type="email" id="email" name="email" placeholder="your.email" autocomplete="off" required>
+            <div id="email_suggestions" class="email-suggestions hidden"></div>
+          </div>
         </div>
 
         <button type="submit" class="btn btn-primary btn-block">Create Student</button>

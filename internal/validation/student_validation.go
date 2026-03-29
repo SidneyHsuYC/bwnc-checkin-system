@@ -34,10 +34,7 @@ func ValidateStudent(student *models.Student) error {
 		errors = append(errors, "last_name is required")
 	}
 
-	// Validate class info
-	if strings.TrimSpace(student.ClassInfo) == "" {
-		errors = append(errors, "class_info is required")
-	}
+	// Class info is now optional - no validation needed
 
 	// Validate email
 	if strings.TrimSpace(student.Email) == "" {

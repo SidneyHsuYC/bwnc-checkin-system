@@ -268,3 +268,61 @@ input[readonly] {
     flex-direction: column;
   }
 }
+
+/* Register Prompt */
+.register-prompt {
+  text-align: center;
+  margin: 16px 0;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.register-prompt p {
+  margin: 0;
+  color: #666;
+}
+
+.register-link {
+  color: #667eea;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.register-link:hover {
+  text-decoration: underline;
+}
+
+/* Email Suggestions */
+.email-input-container {
+  position: relative;
+}
+
+.email-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #667eea;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.email-suggestion-item {
+  padding: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.email-suggestion-item:hover {
+  background: #f5f5ff;
+}
+
+.email-suggestion-item:last-child {
+  border-bottom: none;
+}

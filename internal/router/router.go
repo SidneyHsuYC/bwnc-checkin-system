@@ -39,7 +39,7 @@ func requestLogger(next http.Handler) http.Handler {
 	})
 }
 
-func NewRouter(userHandler *handlers.UserHandler, studentHandler *handlers.StudentHandler, eventHandler *handlers.EventHandler, checkinHandler *handlers.CheckinHandler) http.Handler {
+func NewRouter(userHandler *handlers.UserHandler, studentHandler *handlers.StudentHandler, eventHandler *handlers.EventHandler, checkinHandler *handlers.CheckinHandler, classHandler *handlers.ClassHandler) http.Handler {
 	r := chi.NewRouter()
 
 	// Middleware
@@ -72,6 +72,14 @@ func NewRouter(userHandler *handlers.UserHandler, studentHandler *handlers.Stude
 		// Student routes
 		r.Post("/students", studentHandler.CreateStudent)
 		r.Get("/students/search", studentHandler.SearchStudents)
+
+		// Class routes
+		r.Post("/classes", classHandler.CreateClass)
+		r.Get("/classes", classHandler.ListClasses)
+		r.Get("/classes/search", classHandler.SearchClasses)
+		r.Get("/classes/{id}", classHandler.GetClass)
+		r.Put("/classes/{id}", classHandler.UpdateClass)
+		r.Delete("/classes/{id}", classHandler.DeleteClass)
 
 		// Event routes
 		r.Post("/events", eventHandler.CreateEvent)

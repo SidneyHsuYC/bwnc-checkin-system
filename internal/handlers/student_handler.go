@@ -9,38 +9,50 @@ import (
 	"github.com/SidneyHsuYC/bwnc-checkin-system/internal/logger"
 	"github.com/SidneyHsuYC/bwnc-checkin-system/internal/models"
 	"github.com/SidneyHsuYC/bwnc-checkin-system/internal/repository"
-	"github.com/SidneyHsuYC/bwnc-checkin-system/internal/service"
+	"github.com/SidneyHsuYC/bwnc-checkin-system/internal/validation"
 )
 
 // StudentHandler handles HTTP requests for students
 type StudentHandler struct {
-	service *service.StudentService
+	repo repository.StudentRepository
 }
 
 // NewStudentHandler creates a new student handler
 func NewStudentHandler(db *sql.DB) *StudentHandler {
 	repo := repository.NewPostgresStudentRepository(db)
-	svc := service.NewStudentService(repo)
-	return &StudentHandler{service: svc}
+	return &StudentHandler{repo: repo}
 }
 
 // CreateStudent handles POST /api/students
 func (h *StudentHandler) CreateStudent(w http.ResponseWriter, r *http.Request) {
 	var student models.Student
 
+	// Decode JSON
 	if err := json.NewDecoder(r.Body).Decode(&student); err != nil {
 		logger.Error("Invalid request body", "error", err)
 		respondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	if err := h.service.Create(r.Context(), &student); err != nil {
-		// Check if it's a validation error or duplicate email
-		if strings.Contains(err.Error(), "validation error") {
-			respondWithError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		if strings.Contains(err.Error(), "email already exists") {
+	// Sanitize and validate
+	validation.SanitizeStudent(&student)
+	if err := validation.ValidateStudent(&student); err != nil {
+		logger.Warn("Student validation failed", "error", err)
+		respondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Check email uniqueness
+	existing, err := h.repo.GetByEmail(r.Context(), student.Email)
+	if err == nil && existing != nil {
+		logger.Warn("Duplicate email attempt", "email", student.Email)
+		respondWithError(w, http.StatusConflict, "Email already exists")
+		return
+	}
+
+	// Create student
+	if err := h.repo.Create(r.Context(), &student); err != nil {
+		if strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "unique constraint") {
 			respondWithError(w, http.StatusConflict, "Email already exists")
 			return
 		}
@@ -49,6 +61,7 @@ func (h *StudentHandler) CreateStudent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger.Info("Student created successfully", "id", student.ID, "email", student.Email)
 	respondWithJSON(w, http.StatusCreated, student)
 }
 
@@ -61,13 +74,14 @@ func (h *StudentHandler) SearchStudents(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	results, err := h.service.Search(r.Context(), query)
+	results, err := h.repo.Search(r.Context(), query)
 	if err != nil {
 		logger.Error("Failed to search students", "error", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to search students")
 		return
 	}
 
+	logger.Info("Student search completed", "query", query, "results", len(results))
 	respondWithJSON(w, http.StatusOK, results)
 }
 

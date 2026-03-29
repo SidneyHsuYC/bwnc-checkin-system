@@ -30,8 +30,8 @@ func NewPostgresStudentRepository(db *sql.DB) StudentRepository {
 // Create inserts a new student into the database
 func (r *PostgresStudentRepository) Create(ctx context.Context, student *models.Student) error {
 	query := `
-		INSERT INTO students (first_name, last_name, class_info, email)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO students (first_name, last_name, class_info, class_id, email)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, created_at, updated_at
 	`
 
@@ -41,6 +41,7 @@ func (r *PostgresStudentRepository) Create(ctx context.Context, student *models.
 		student.FirstName,
 		student.LastName,
 		student.ClassInfo,
+		student.ClassID,
 		student.Email,
 	).Scan(&student.ID, &student.CreatedAt, &student.UpdatedAt)
 
@@ -58,7 +59,7 @@ func (r *PostgresStudentRepository) Create(ctx context.Context, student *models.
 // GetByEmail retrieves a student by email address
 func (r *PostgresStudentRepository) GetByEmail(ctx context.Context, email string) (*models.Student, error) {
 	query := `
-		SELECT id, first_name, last_name, class_info, email, created_at, updated_at
+		SELECT id, first_name, last_name, class_info, class_id, email, created_at, updated_at
 		FROM students
 		WHERE email = $1
 	`
@@ -69,6 +70,7 @@ func (r *PostgresStudentRepository) GetByEmail(ctx context.Context, email string
 		&student.FirstName,
 		&student.LastName,
 		&student.ClassInfo,
+		&student.ClassID,
 		&student.Email,
 		&student.CreatedAt,
 		&student.UpdatedAt,
@@ -88,7 +90,7 @@ func (r *PostgresStudentRepository) GetByEmail(ctx context.Context, email string
 // GetByID retrieves a student by ID
 func (r *PostgresStudentRepository) GetByID(ctx context.Context, id int) (*models.Student, error) {
 	query := `
-		SELECT id, first_name, last_name, class_info, email, created_at, updated_at
+		SELECT id, first_name, last_name, class_info, class_id, email, created_at, updated_at
 		FROM students
 		WHERE id = $1
 	`
@@ -99,6 +101,7 @@ func (r *PostgresStudentRepository) GetByID(ctx context.Context, id int) (*model
 		&student.FirstName,
 		&student.LastName,
 		&student.ClassInfo,
+		&student.ClassID,
 		&student.Email,
 		&student.CreatedAt,
 		&student.UpdatedAt,

@@ -4,53 +4,57 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/SidneyHsuYC/bwnc-checkin-system/internal/logger"
 	"github.com/SidneyHsuYC/bwnc-checkin-system/internal/models"
 	"github.com/SidneyHsuYC/bwnc-checkin-system/internal/repository"
-	"github.com/SidneyHsuYC/bwnc-checkin-system/internal/service"
+	"github.com/SidneyHsuYC/bwnc-checkin-system/internal/validation"
 )
 
 // EventHandler handles HTTP requests for events
 type EventHandler struct {
-	service *service.EventService
+	repo repository.EventRepository
 }
 
 // NewEventHandler creates a new event handler
 func NewEventHandler(db *sql.DB) *EventHandler {
 	repo := repository.NewPostgresEventRepository(db)
-	svc := service.NewEventService(repo)
-	return &EventHandler{service: svc}
+	return &EventHandler{repo: repo}
 }
 
 // CreateEvent handles POST /api/events
 func (h *EventHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	var event models.Event
 
+	// Decode JSON
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
 		logger.Error("Invalid request body", "error", err)
 		respondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	if err := h.service.Create(r.Context(), &event); err != nil {
-		// Check if it's a validation error
-		if strings.Contains(err.Error(), "validation error") {
-			respondWithError(w, http.StatusBadRequest, err.Error())
-			return
-		}
+	// Sanitize and validate
+	validation.SanitizeEvent(&event)
+	if err := validation.ValidateEvent(&event); err != nil {
+		logger.Warn("Event validation failed", "error", err)
+		respondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Create event
+	if err := h.repo.Create(r.Context(), &event); err != nil {
 		logger.Error("Failed to create event", "error", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to create event")
 		return
 	}
 
+	logger.Info("Event created successfully", "id", event.ID, "name", event.EventName)
 	respondWithJSON(w, http.StatusCreated, event)
 }
 
 // ListEvents handles GET /api/events
 func (h *EventHandler) ListEvents(w http.ResponseWriter, r *http.Request) {
-	events, err := h.service.List(r.Context())
+	events, err := h.repo.List(r.Context())
 	if err != nil {
 		logger.Error("Failed to list events", "error", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to list events")
@@ -62,7 +66,7 @@ func (h *EventHandler) ListEvents(w http.ResponseWriter, r *http.Request) {
 
 // ListUpcomingEvents handles GET /api/events/upcoming
 func (h *EventHandler) ListUpcomingEvents(w http.ResponseWriter, r *http.Request) {
-	events, err := h.service.ListUpcoming(r.Context())
+	events, err := h.repo.ListUpcoming(r.Context())
 	if err != nil {
 		logger.Error("Failed to list upcoming events", "error", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to list upcoming events")
