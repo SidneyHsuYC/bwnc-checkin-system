@@ -1,337 +1,109 @@
-# Go Backend Server
+# bwnc-checkin-system
 
-A production-ready Go backend server with PostgreSQL database, comprehensive logging, and automated testing.
+Kiosk-based student check-in web app. Single Go binary that serves a JSON API at `/api/*` and the static frontend (`web/static/`) from `/`. Postgres for storage.
 
-## 🚀 Quick Start
+## Quick start
 
 ```bash
-# Start the server
+# 1. Bring up Postgres (docker-compose also defines an unused mssql service)
+docker-compose up -d postgres
+
+# 2. Copy and edit env
+cp .env.example .env
+
+# 3. Run the server (loads .env, runs migrations, listens on :8090)
 go run cmd/server/main.go
-
-# In another terminal, run tests
-./test_api.sh
 ```
 
-## 📋 Features
+Open <http://localhost:8090> for the kiosk UI.
 
-- ✅ RESTful API with user management
-- ✅ PostgreSQL database with connection pooling
-- ✅ Comprehensive logging with visual indicators
-- ✅ Health check endpoint
-- ✅ Automated testing infrastructure
-- ✅ CORS support
-- ✅ Error handling with detailed messages
-- ✅ Request timing and performance monitoring
+## Browsing the database
 
-## 🔌 API Endpoints
+`docker-compose.yml` includes an [Adminer](https://www.adminer.org/) container for ad-hoc SQL and table browsing.
 
-| Method | Endpoint      | Description                    |
-|--------|---------------|--------------------------------|
-| GET    | /health       | Health check with DB status    |
-| POST   | /api/users    | Create a new user              |
-| GET    | /api/users    | Get all users (newest first)   |
-| GET    | /             | Static files                   |
-
-## 📝 API Examples
-
-### Health Check
 ```bash
-curl http://localhost:8090/health
+docker-compose up -d adminer
 ```
 
-Response:
-```json
-{
-  "status": "healthy",
-  "database": "connected",
-  "user_count": 5
-}
+Then open <http://localhost:8080> and log in with:
+
+| Field    | Value                |
+|----------|----------------------|
+| System   | PostgreSQL           |
+| Server   | `checkin-postgres`   |
+| Username | `checkin_user`       |
+| Password | `checkin_pass`       |
+| Database | `checkin_db`         |
+
+(`Server` is the Postgres container name on the docker network, not `localhost` — Adminer is connecting from inside the docker network.) Default credentials match `docker-compose.yml`; if you've overridden them, use yours.
+
+## Configuration
+
+Set in `.env` (see `.env.example` for the full template):
+
+| Var           | Required | Notes                                       |
+|---------------|----------|---------------------------------------------|
+| `DB_HOST`     | yes      |                                             |
+| `DB_PORT`     | yes      |                                             |
+| `DB_USER`     | yes      |                                             |
+| `DB_PASSWORD` | yes      |                                             |
+| `DB_NAME`     | yes      |                                             |
+| `DB_SSLMODE`  | yes      | `disable` for local                         |
+| `SERVER_PORT` | no       | Currently ignored — port is hard-coded to `:8090` in `cmd/server/main.go` |
+
+## API
+
+All JSON. All under `/api/*`.
+
+| Method | Path                       | Description                                    |
+|--------|----------------------------|------------------------------------------------|
+| GET    | `/health`                  | Liveness + DB connectivity                     |
+| POST   | `/api/students`            | Create student                                 |
+| GET    | `/api/students/search?q=`  | Search by name/email                           |
+| POST   | `/api/classes`             | Create class                                   |
+| GET    | `/api/classes`             | List classes                                   |
+| GET    | `/api/classes/search?q=`   | Search classes                                 |
+| GET    | `/api/classes/{id}`        | Get class (with leader info if set)            |
+| PUT    | `/api/classes/{id}`        | Update class                                   |
+| DELETE | `/api/classes/{id}`        | Delete class                                   |
+| POST   | `/api/events`              | Create event                                   |
+| GET    | `/api/events`              | List events                                    |
+| GET    | `/api/events/recent`       | Recent events for the kiosk picker             |
+| POST   | `/api/checkins`            | Record a check-in (rejects duplicates)         |
+| GET    | `/api/checkins`            | List check-ins                                 |
+| POST   | `/api/user`, `GET /api/users`, `GET /api/user/{id}` | Legacy user scaffold — don't extend |
+
+The legacy `/api/user(s)` endpoints are kept for backward compatibility from the original scaffold; new check-in features should use Student/Event/Checkin.
+
+## Project layout
+
+```
+cmd/server/main.go         # entry point: env → logger → DB → migrations → router
+internal/
+├── db/                    # Postgres connection + retry/pool
+├── migration/             # forward-only migration runner (homegrown)
+├── models/                # Student, Class, Event, Checkin, User
+├── validation/            # Sanitize* + Validate* helpers (unit-tested)
+├── repository/            # interface + Postgres impl per entity
+├── handlers/              # HTTP layer + business logic (no service layer)
+├── router/                # chi router + requestLogger middleware
+└── logger/                # stdlib log + lumberjack rotation
+migrations/                # 001_…sql, 002_…sql — applied lexicographically
+web/static/                # plain HTML/JS/CSS, no build step
 ```
 
-### Create User
+## Testing
+
 ```bash
-curl -X POST http://localhost:8090/api/users \
-  -H "Content-Type: application/json" \
-  -d '{
-    "first_name": "John",
-    "last_name": "Doe",
-    "phone": "+1-555-0101",
-    "email": "john.doe@example.com"
-  }'
+./run_tests.sh           # Go unit tests (validation + handlers)
+./test_api.sh            # API smoke test — requires server running on :8090
 ```
 
-Response:
-```json
-{
-  "id": 1,
-  "first_name": "John",
-  "last_name": "Doe",
-  "phone": "+1-555-0101",
-  "email": "john.doe@example.com",
-  "created_at": "2026-02-05T04:58:14.996449Z"
-}
-```
+See `TESTING.md` for conventions and what each layer covers.
 
-### Get All Users
-```bash
-curl http://localhost:8090/api/users
-```
+## Further reading
 
-Response:
-```json
-[
-  {
-    "id": 5,
-    "first_name": "Alice",
-    "last_name": "Williams",
-    "phone": "+1-555-0104",
-    "email": "alice.williams@example.com",
-    "created_at": "2026-02-05T04:58:15.144227Z"
-  },
-  ...
-]
-```
-
-## 🧪 Testing
-
-### Automated Tests
-```bash
-./test_api.sh
-```
-
-This will:
-- Create 4 sample users
-- Fetch all users
-- Test validation with invalid data
-- Display color-coded results
-
-### Manual Testing
-See `TESTING.md` for detailed testing instructions.
-
-## 📊 Logging
-
-The server provides comprehensive logging with visual indicators:
-
-- 🚀 Server startup events
-- 📦 Database operations
-- 🔄 Migration execution
-- 📡 HTTP requests with timing
-- ✅ Success indicators
-- ❌ Error details
-- ⚠️  Warnings
-- 📝 Data operations
-- 🏥 Health checks
-
-Example log output:
-```
-🚀 Starting server...
-✅ Loaded .env file
-📦 Connecting to database...
-✅ Database connection established
-🔄 Running database migrations...
-✅ Migrations completed successfully
-🌐 Server running on http://localhost:8090
-📝 [CreateUser] Received request: {FirstName:John LastName:Doe...}
-✅ [CreateUser] User created successfully: ID=1, Email=john.doe@example.com
-📡 POST /api/users - Status: 201 - Duration: 16.144833ms
-```
-
-## 🗄️ Database
-
-### Configuration
-- Database: PostgreSQL 17
-- Connection Pool: 25 max connections, 5 idle
-- Connection Lifetime: 5 minutes
-- Retry Logic: 5 attempts with 2s delay
-
-### Schema
-```sql
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    first_name VARCHAR(50) NOT NULL,
-    last_name VARCHAR(50) NOT NULL,
-    phone VARCHAR(20) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### Direct Database Access
-```bash
-# Connect to PostgreSQL
-docker exec -it postgres psql -U postgres
-
-# View all users
-docker exec -it postgres psql -U postgres -c "SELECT * FROM users;"
-
-# Count users
-docker exec -it postgres psql -U postgres -c "SELECT COUNT(*) FROM users;"
-```
-
-## 📁 Project Structure
-
-```
-go-backend/
-├── cmd/
-│   └── server/
-│       └── main.go              # Server entry point
-├── internal/
-│   ├── db/
-│   │   └── postgres.go          # Database connection
-│   ├── handlers/
-│   │   └── user.go              # User handlers
-│   ├── models/
-│   │   └── user.go              # User model
-│   └── router/
-│       └── router.go            # HTTP router
-├── migrations/
-│   └── 001_create_users.sql    # Database migrations
-├── web/
-│   └── static/
-│       └── index.html           # Static files
-├── .env                         # Environment variables
-├── go.mod                       # Go dependencies
-├── test_api.sh                  # Automated tests
-├── TESTING.md                   # Testing guide
-├── SUMMARY.md                   # Enhancement summary
-├── QUICK_REFERENCE.md           # Command reference
-├── IMPROVEMENTS.md              # Before/after comparison
-└── README.md                    # This file
-```
-
-## ⚙️ Configuration
-
-### Environment Variables (.env)
-```env
-DATABASE_URL=postgres://postgres:StrongPassword123!@localhost:5432?sslmode=disable
-```
-
-### Server Configuration
-- Port: 8090
-- CORS: Enabled for localhost:3000 and localhost:8090
-- Request Timeout: None (configurable)
-- Max Request Size: Default
-
-## 🔧 Development
-
-### Prerequisites
-- Go 1.25.5 or higher
-- Docker and Docker Compose
-- PostgreSQL container running
-- `jq` (optional, for JSON formatting)
-
-### Setup
-1. Ensure PostgreSQL is running:
-   ```bash
-   docker ps | grep postgres
-   ```
-
-2. Copy and configure environment variables:
-   ```bash
-   cp .env.example .env  # If needed
-   ```
-
-3. Start the server:
-   ```bash
-   go run cmd/server/main.go
-   ```
-
-### Dependencies
-```
-github.com/joho/godotenv v1.5.1
-github.com/lib/pq v1.11.1
-github.com/go-chi/chi/v5 v5.2.4
-github.com/go-chi/cors v1.2.2
-```
-
-## 🐛 Troubleshooting
-
-### Port Already in Use
-```bash
-lsof -i :8090
-kill -9 <PID>
-```
-
-### Database Connection Failed
-```bash
-# Check if PostgreSQL is running
-docker ps | grep postgres
-
-# Check database credentials in .env
-cat .env
-
-# Test database connection
-docker exec -it postgres psql -U postgres -c "SELECT 1;"
-```
-
-### Migration Errors
-```bash
-# Check if migration file exists
-ls -la migrations/
-
-# Manually run migration
-docker exec -it postgres psql -U postgres < migrations/001_create_users.sql
-```
-
-## 📚 Documentation
-
-- **TESTING.md** - Comprehensive testing guide
-- **SUMMARY.md** - Complete enhancement summary
-- **QUICK_REFERENCE.md** - Quick command reference
-- **IMPROVEMENTS.md** - Before/after comparison
-
-## 🎯 Performance
-
-Response times from production testing:
-- User creation: 3-16ms
-- User retrieval: 1-6ms
-- Health check: 5-6ms
-
-## 🔒 Security
-
-- Password masking in logs
-- Input validation on all endpoints
-- CORS properly configured
-- SQL injection prevention (parameterized queries)
-- No sensitive data in error messages
-
-## 📈 Monitoring
-
-### Health Check
-```bash
-curl http://localhost:8090/health
-```
-
-### Request Metrics
-All requests are logged with:
-- HTTP method
-- Endpoint
-- Status code
-- Duration
-
-### Database Status
-Health check endpoint provides:
-- Connection status
-- User count
-- Overall system health
-
-## 🚦 Status
-
-✅ Production Ready
-- Comprehensive logging
-- Error handling
-- Testing infrastructure
-- Documentation complete
-- Performance optimized
-
-## 📄 License
-
-[Your License Here]
-
-## 👥 Contributors
-
-[Your Name/Team]
-
----
-
-For more information, see the documentation files in this directory.
+- `CLAUDE.md` — rules and orientation for AI agents working in this repo
+- `ARCHITECTURE_SIMPLIFIED.md` — why there's no service layer
+- `LOGGING.md` — logger usage and gotchas
+- `CHANGELOG.md` — notable changes

@@ -54,6 +54,3 @@ backups
 data.bak
 mssql-data
 postgres-data
-
-# Markdown
-*.md
