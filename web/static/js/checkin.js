@@ -7,25 +7,37 @@ let selectedEventId = null;
 
 // Load upcoming events on page load
 document.addEventListener('DOMContentLoaded', () => {
-  loadUpcomingEvents();
+  loadEvents();
   setupEventHandlers();
 });
 
-// Load upcoming events
-async function loadUpcomingEvents() {
+// Load events. Defaults to last 6 months and onward; when "Show all events"
+// is checked, loads every event. Preserves the current selection if possible.
+async function loadEvents() {
+  const showAll = document.getElementById('show_all_events').checked;
+  const path = showAll ? '/events' : '/events/recent';
+  const eventSelect = document.getElementById('event_id');
+  const previouslySelected = eventSelect.value;
+
   try {
-    const response = await fetch(`${API_BASE_URL}/events/upcoming`);
-    if (response.ok) {
-      const events = await response.json();
-      const eventSelect = document.getElementById('event_id');
-      
-      events.forEach(event => {
-        const option = document.createElement('option');
-        option.value = event.id;
-        const eventDate = new Date(event.event_time);
-        option.textContent = `${event.event_name} - ${eventDate.toLocaleString()}`;
-        eventSelect.appendChild(option);
-      });
+    const response = await fetch(`${API_BASE_URL}${path}`);
+    if (!response.ok) {
+      showMessage('Failed to load events', 'error');
+      return;
+    }
+    const events = await response.json();
+
+    eventSelect.innerHTML = '<option value="">-- Select an event --</option>';
+    events.forEach(event => {
+      const option = document.createElement('option');
+      option.value = event.id;
+      const eventDate = new Date(event.event_time);
+      option.textContent = `${event.event_name} - ${eventDate.toLocaleString()}`;
+      eventSelect.appendChild(option);
+    });
+
+    if (previouslySelected && eventSelect.querySelector(`option[value="${previouslySelected}"]`)) {
+      eventSelect.value = previouslySelected;
     }
   } catch (error) {
     console.error('Error loading events:', error);
@@ -57,6 +69,9 @@ function setupEventHandlers() {
 
   // Form submission
   checkinForm.addEventListener('submit', handleCheckinSubmit);
+
+  // Reload event list when "Show all events" is toggled
+  document.getElementById('show_all_events').addEventListener('change', loadEvents);
 
   // Continue to check-in button
   continueBtn.addEventListener('click', () => {

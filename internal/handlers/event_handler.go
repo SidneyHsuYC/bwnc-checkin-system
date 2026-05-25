@@ -64,12 +64,12 @@ func (h *EventHandler) ListEvents(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, events)
 }
 
-// ListUpcomingEvents handles GET /api/events/upcoming
-func (h *EventHandler) ListUpcomingEvents(w http.ResponseWriter, r *http.Request) {
-	events, err := h.repo.ListUpcoming(r.Context())
+// ListRecentEvents handles GET /api/events/recent
+func (h *EventHandler) ListRecentEvents(w http.ResponseWriter, r *http.Request) {
+	events, err := h.repo.ListRecent(r.Context())
 	if err != nil {
-		logger.Error("Failed to list upcoming events", "error", err)
-		respondWithError(w, http.StatusInternalServerError, "Failed to list upcoming events")
+		logger.Error("Failed to list recent events", "error", err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to list recent events")
 		return
 	}
 

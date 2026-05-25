@@ -14,7 +14,7 @@ type EventRepository interface {
 	Create(ctx context.Context, event *models.Event) error
 	GetByID(ctx context.Context, id int) (*models.Event, error)
 	List(ctx context.Context) ([]*models.Event, error)
-	ListUpcoming(ctx context.Context) ([]*models.Event, error)
+	ListRecent(ctx context.Context) ([]*models.Event, error)
 }
 
 // PostgresEventRepository implements EventRepository for PostgreSQL
@@ -93,7 +93,7 @@ func (r *PostgresEventRepository) List(ctx context.Context) ([]*models.Event, er
 	}
 	defer rows.Close()
 
-	var events []*models.Event
+	events := make([]*models.Event, 0)
 	for rows.Next() {
 		event := &models.Event{}
 		err := rows.Scan(
@@ -117,23 +117,23 @@ func (r *PostgresEventRepository) List(ctx context.Context) ([]*models.Event, er
 	return events, nil
 }
 
-// ListUpcoming retrieves all upcoming events (event_time >= now)
-func (r *PostgresEventRepository) ListUpcoming(ctx context.Context) ([]*models.Event, error) {
+// ListRecent retrieves events from the last 6 months onward
+func (r *PostgresEventRepository) ListRecent(ctx context.Context) ([]*models.Event, error) {
 	query := `
 		SELECT id, event_name, event_time, event_type, created_at, updated_at
 		FROM events
 		WHERE event_time >= $1
-		ORDER BY event_time ASC
+		ORDER BY event_time DESC
 	`
 
-	now := time.Now()
-	rows, err := r.db.QueryContext(ctx, query, now)
+	cutoff := time.Now().AddDate(0, -6, 0)
+	rows, err := r.db.QueryContext(ctx, query, cutoff)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list upcoming events: %w", err)
+		return nil, fmt.Errorf("failed to list recent events: %w", err)
 	}
 	defer rows.Close()
 
-	var events []*models.Event
+	events := make([]*models.Event, 0)
 	for rows.Next() {
 		event := &models.Event{}
 		err := rows.Scan(
@@ -151,7 +151,7 @@ func (r *PostgresEventRepository) ListUpcoming(ctx context.Context) ([]*models.E
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating upcoming events: %w", err)
+		return nil, fmt.Errorf("error iterating recent events: %w", err)
 	}
 
 	return events, nil

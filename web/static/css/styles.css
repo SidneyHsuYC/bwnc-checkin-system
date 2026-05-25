@@ -136,6 +136,24 @@ input[readonly] {
   cursor: not-allowed;
 }
 
+label.checkbox-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 0;
+  font-weight: 400;
+  font-size: 0.9rem;
+  color: #555;
+  cursor: pointer;
+}
+
+label.checkbox-inline input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
 /* Buttons */
 .btn {
   padding: 12px 24px;

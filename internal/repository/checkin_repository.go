@@ -105,7 +105,7 @@ func (r *PostgresCheckinRepository) ListByEvent(ctx context.Context, eventID int
 	}
 	defer rows.Close()
 
-	var checkins []*models.CheckinDetail
+	checkins := make([]*models.CheckinDetail, 0)
 	for rows.Next() {
 		detail := &models.CheckinDetail{
 			Student: models.Student{},

@@ -137,7 +137,7 @@ func (r *PostgresStudentRepository) Search(ctx context.Context, query string) ([
 	}
 	defer rows.Close()
 
-	var results []*models.StudentSearchResult
+	results := make([]*models.StudentSearchResult, 0)
 	for rows.Next() {
 		result := &models.StudentSearchResult{}
 		err := rows.Scan(

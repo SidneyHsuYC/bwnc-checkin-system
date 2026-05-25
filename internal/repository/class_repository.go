@@ -100,7 +100,7 @@ func (r *PostgresClassRepository) List(ctx context.Context) ([]models.ClassWithL
 	}
 	defer rows.Close()
 
-	var classes []models.ClassWithLeader
+	classes := make([]models.ClassWithLeader, 0)
 	for rows.Next() {
 		var class models.ClassWithLeader
 		var studentID sql.NullInt64
@@ -154,7 +154,7 @@ func (r *PostgresClassRepository) Search(ctx context.Context, query string) ([]m
 	}
 	defer rows.Close()
 
-	var classes []models.ClassWithLeader
+	classes := make([]models.ClassWithLeader, 0)
 	for rows.Next() {
 		var class models.ClassWithLeader
 		var studentID sql.NullInt64

@@ -84,7 +84,7 @@ func NewRouter(userHandler *handlers.UserHandler, studentHandler *handlers.Stude
 		// Event routes
 		r.Post("/events", eventHandler.CreateEvent)
 		r.Get("/events", eventHandler.ListEvents)
-		r.Get("/events/upcoming", eventHandler.ListUpcomingEvents)
+		r.Get("/events/recent", eventHandler.ListRecentEvents)
 
 		// Check-in routes
 		r.Post("/checkins", checkinHandler.CreateCheckin)
