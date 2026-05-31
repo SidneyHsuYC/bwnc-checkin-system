@@ -47,22 +47,24 @@ func main() {
 	logger.Info("Migrations completed successfully")
 
 	// Initialize handlers and router
-	userHandler := &handlers.UserHandler{DB: database}
+	healthHandler := handlers.NewHealthHandler(database)
 	studentHandler := handlers.NewStudentHandler(database)
 	eventHandler := handlers.NewEventHandler(database)
 	checkinHandler := handlers.NewCheckinHandler(database)
 	classHandler := handlers.NewClassHandler(database)
-	r := router.NewRouter(userHandler, studentHandler, eventHandler, checkinHandler, classHandler)
+	r := router.NewRouter(healthHandler, studentHandler, eventHandler, checkinHandler, classHandler)
 
 	// Start server
 	port := ":8090"
 	logger.Info("Server running", "url", "http://localhost"+port)
 	logger.Info("API Endpoints:")
-	logger.Info("   GET    /health       - Health check")
-	logger.Info("   POST   /api/user     - Create a new user")
-	logger.Info("   GET    /api/users    - Get all users")
-	logger.Info("   GET    /api/user/:id - Get user by ID")
-	logger.Info("   GET    /             - Static files")
+	logger.Info("   GET    /health              - Health check")
+	logger.Info("   POST   /api/students        - Create a student")
+	logger.Info("   GET    /api/students/search - Search students")
+	logger.Info("   POST   /api/classes         - Create a class")
+	logger.Info("   POST   /api/events          - Create an event")
+	logger.Info("   POST   /api/checkins        - Record a check-in")
+	logger.Info("   GET    /                    - Static files")
 	logger.Info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 	// Setup graceful shutdown

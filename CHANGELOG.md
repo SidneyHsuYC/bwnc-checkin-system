@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Removed
+- **Legacy `User` scaffold** — deleted `internal/handlers/user.go`, `internal/models/user.go`,
+  the `/api/user`, `/api/users`, and `/api/user/{id}` routes, and `migrations/001_create_users.sql`.
+  The frontend never used it; new features use Student/Event/Checkin.
+- **`golang-migrate/migrate`** dependency (had no Go imports) — dropped via `go mod tidy`.
+- **`mssql` service** from `docker-compose.yml` (unused; Postgres is the only datastore).
+- Tracked stray files: `cmd/server/main.go.bak`, `.bak2`, `.backup`, and the committed `tmp/server` binary.
+
+### Changed
+- `/health` is now served by a dedicated `HealthHandler` (`internal/handlers/health.go`) that reuses
+  `db.HealthCheck` and no longer queries the `users` table; response is `{status, database}` (no `user_count`).
+
+### Added
+- **Example data** for local development: idempotent `seed.sql` + `seed.sh` runner
+  (5 classes, 10 students, 5 events dated relative to today, 9 check-ins).
+- Collaborator-focused `README.md` Quick start, kiosk screenshots (`docs/images/`), and a Troubleshooting section.
+- Fixed `test_api.sh` for the current schema (`class_name` required, `student_id` not `leader_id`) and made it re-runnable.
+
 ## [2.0.0] - 2026-02-04
 
 ### Added

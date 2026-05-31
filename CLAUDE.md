@@ -22,7 +22,7 @@ For change history use `git log` — it's more reliable than any narrative doc.
 ## Common commands
 
 ```bash
-# Bring up Postgres (docker-compose also defines an unused mssql service)
+# Bring up Postgres
 docker-compose up -d postgres
 
 # Run the server (loads .env, runs migrations, listens on :8090)
@@ -57,11 +57,10 @@ Request flow:
 - **Student** (`models/student.go`) — has optional `ClassID *int` and a legacy `ClassInfo string`. Both can coexist; `ClassInfo` is kept for backward compat.
 - **Class** (`models/class.go`) — has optional `StudentID *int` (the class leader, who is also a student). Migration `008_rename_leader_to_student.sql` renamed this from `leader_id`; if you see `leader_id` references in old docs, the current name is `student_id`.
 - **Event**, **Checkin** — straightforward.
-- **User** (`models/user.go`, `handlers/user.go`) is legacy from the original scaffold and still wired at `/api/user`, `/api/users`, `/api/user/{id}`. Don't extend it for new check-in features; use Student/Event/Checkin.
 
 ### Migrations
 
-`internal/migration/migration.go` is a homegrown forward-only runner: it scans `migrations/*.sql` lexicographically, tracks applied files in a `schema_migrations` table by filename, and runs anything new. There is no down-migration support and `golang-migrate/migrate` (in `go.sum`) is **not** actually used. New migrations: prefix with the next zero-padded number (`009_…sql`); the whole file runs as a single `db.Exec`, so don't include `\` psql meta-commands.
+`internal/migration/migration.go` is a homegrown forward-only runner: it scans `migrations/*.sql` lexicographically, tracks applied files in a `schema_migrations` table by filename, and runs anything new. There is no down-migration support. New migrations: prefix with the next zero-padded number (`009_…sql`); the whole file runs as a single `db.Exec`, so don't include `\` psql meta-commands. (Migrations start at `002`; the original `001_create_users.sql` was removed along with the unused user scaffold.)
 
 ### Logging
 
@@ -79,4 +78,4 @@ Unit tests live alongside code (`*_test.go`) in `internal/validation/` and `inte
 
 - Markdown docs: only the six listed under **Where to look** are canonical. Do not create `*_SUMMARY.md`, `*_FIX.md`, `*_COMPLETE.md`, `IMPROVEMENTS_*.md`, `FIXES_ROUND*.md`, `TEST_RESULTS.md`, or other session-artifact docs. Findings from a session belong in the commit message, the PR description, or this conversation — not a new top-level doc.
 - `.env` is gitignored; `.env.example` and `.env.production` are tracked templates.
-- Backup files (`main.go.bak`, `main.go.bak2`, `data.bak/`, `mssql-data/`, `postgres-data/`) are leftovers — leave them unless cleanup is requested.
+- Local-only leftover dirs (`data.bak/`, `mssql-data/`, `postgres-data/`, `backups/`) are gitignored — leave them unless cleanup is requested. (`postgres-data/` is your live local DB volume.)

@@ -39,7 +39,7 @@ func requestLogger(next http.Handler) http.Handler {
 	})
 }
 
-func NewRouter(userHandler *handlers.UserHandler, studentHandler *handlers.StudentHandler, eventHandler *handlers.EventHandler, checkinHandler *handlers.CheckinHandler, classHandler *handlers.ClassHandler) http.Handler {
+func NewRouter(healthHandler *handlers.HealthHandler, studentHandler *handlers.StudentHandler, eventHandler *handlers.EventHandler, checkinHandler *handlers.CheckinHandler, classHandler *handlers.ClassHandler) http.Handler {
 	r := chi.NewRouter()
 
 	// Middleware
@@ -60,15 +60,10 @@ func NewRouter(userHandler *handlers.UserHandler, studentHandler *handlers.Stude
 	})
 
 	// Health check endpoint
-	r.Get("/health", userHandler.HealthCheck)
+	r.Get("/health", healthHandler.Check)
 
 	// API routes
 	r.Route("/api", func(r chi.Router) {
-		// User routes (legacy)
-		r.Post("/user", userHandler.CreateUser)
-		r.Get("/users", userHandler.GetUsers)
-		r.Get("/user/{id}", userHandler.GetUserByID)
-
 		// Student routes
 		r.Post("/students", studentHandler.CreateStudent)
 		r.Get("/students/search", studentHandler.SearchStudents)
